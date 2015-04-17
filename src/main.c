@@ -43,53 +43,46 @@ static GPathInfo HOUR_HAND_POINTS = {
 static GRect s_clock_bounds;
 static GPoint s_clock_center;
 
+static struct tm *the_time;
+
 static void draw_clock_layer_hours(Layer *layer, GContext *ctx) {
-	//get time
-	time_t temp = time(NULL);
-	struct tm *tick_time = localtime(&temp);
-	
 	uint16_t offset = 1;
 		
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
-	gpath_rotate_to(s_hand_path_hour, TRIG_MAX_ANGLE * tick_time->tm_hour / 12);
+	gpath_rotate_to(s_hand_path_hour, TRIG_MAX_ANGLE * the_time->tm_hour / 12);
 	gpath_draw_filled(ctx, s_hand_path_hour);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
 }
 
 static void draw_clock_layer_mins(Layer *layer, GContext *ctx) {
-	//get time
-	time_t temp = time(NULL);
-	struct tm *tick_time = localtime(&temp);
-	
 	uint16_t offset = 1 + THICKNESS + OFFSET;
 	
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
-	gpath_rotate_to(s_hand_path_min, TRIG_MAX_ANGLE * tick_time->tm_min / 60);
+	gpath_rotate_to(s_hand_path_min, TRIG_MAX_ANGLE * the_time->tm_min / 60);
 	gpath_draw_filled(ctx, s_hand_path_min);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
 }
 
 static void draw_clock_layer_secs(Layer *layer, GContext *ctx) {
-	//get time
-	time_t temp = time(NULL);
-	struct tm *tick_time = localtime(&temp);
-	
 	uint16_t offset = 1 + (THICKNESS * 2) + (OFFSET * 2);
 	
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
-	gpath_rotate_to(s_hand_path_sec, TRIG_MAX_ANGLE * tick_time->tm_sec / 60);
+	gpath_rotate_to(s_hand_path_sec, TRIG_MAX_ANGLE * the_time->tm_sec / 60);
 	gpath_draw_filled(ctx, s_hand_path_sec);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
 }
 
 //updates time display
 static void updateTime(TimeUnits unitsChanged) {
+	//get time
+	time_t temp = time(NULL);
+	the_time = localtime(&temp);
 	
 	//instruct pebble to redraw neccessary layers
 	if((unitsChanged & HOUR_UNIT) != 0) {
