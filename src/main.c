@@ -5,7 +5,9 @@ static const uint16_t THICKNESS = 10;
 static const uint16_t OFFSET = 4;
 	
 static Window *s_main_window = NULL;
-static Layer *s_clock_layer = NULL;
+static Layer *s_clock_layer_secs = NULL;
+static Layer *s_clock_layer_mins = NULL;
+static Layer *s_clock_layer_hours = NULL;
 
 static GPath *s_hand_path_sec;
 static GPathInfo SECOND_HAND_POINTS = {
@@ -41,52 +43,68 @@ static GPathInfo HOUR_HAND_POINTS = {
 static GRect s_clock_bounds;
 static GPoint s_clock_center;
 
-static void draw_clock_layer(Layer *layer, GContext *ctx) {
+static void draw_clock_layer_hours(Layer *layer, GContext *ctx) {
 	//get time
 	time_t temp = time(NULL);
 	struct tm *tick_time = localtime(&temp);
 	
-	graphics_context_set_stroke_color(ctx, GColorWhite);
-	
-	//draw hours - initial offset is 1 to prevent flattened right edge of circle
 	uint16_t offset = 1;
+		
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
 	gpath_rotate_to(s_hand_path_hour, TRIG_MAX_ANGLE * tick_time->tm_hour / 12);
-	gpath_move_to(s_hand_path_hour, s_clock_center);
 	gpath_draw_filled(ctx, s_hand_path_hour);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
+}
+
+static void draw_clock_layer_mins(Layer *layer, GContext *ctx) {
+	//get time
+	time_t temp = time(NULL);
+	struct tm *tick_time = localtime(&temp);
 	
-	//draw minutes
-	offset += THICKNESS + OFFSET;
+	uint16_t offset = 1 + THICKNESS + OFFSET;
+	
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
 	gpath_rotate_to(s_hand_path_min, TRIG_MAX_ANGLE * tick_time->tm_min / 60);
-	gpath_move_to(s_hand_path_min, s_clock_center);
 	gpath_draw_filled(ctx, s_hand_path_min);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
+}
+
+static void draw_clock_layer_secs(Layer *layer, GContext *ctx) {
+	//get time
+	time_t temp = time(NULL);
+	struct tm *tick_time = localtime(&temp);
 	
-	//draw seconds
-	offset += THICKNESS + OFFSET;
+	uint16_t offset = 1 + (THICKNESS * 2) + (OFFSET * 2);
+	
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
 	gpath_rotate_to(s_hand_path_sec, TRIG_MAX_ANGLE * tick_time->tm_sec / 60);
-	gpath_move_to(s_hand_path_sec, s_clock_center);
 	gpath_draw_filled(ctx, s_hand_path_sec);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
 }
 
 //updates time display
-static void updateTime() {
-	//instruct pebble to redraw
-	layer_mark_dirty(s_clock_layer);
+static void updateTime(TimeUnits unitsChanged) {
+	
+	//instruct pebble to redraw neccessary layers
+	if((unitsChanged & HOUR_UNIT) != 0) {
+		layer_mark_dirty(s_clock_layer_hours);
+	}
+	
+	if((unitsChanged & MINUTE_UNIT) != 0) {
+		layer_mark_dirty(s_clock_layer_mins);
+	}
+	
+	layer_mark_dirty(s_clock_layer_secs);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits unitsChanged) {
-	updateTime();
+	updateTime(unitsChanged);
 }
 
 static void main_window_load(Window *window) {
@@ -96,23 +114,38 @@ static void main_window_load(Window *window) {
 	//get window dimensions
 	GRect bounds = layer_get_bounds(window_layer);
 	
-	//add drawing layer
-	s_clock_layer = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
-	layer_set_update_proc(s_clock_layer, draw_clock_layer);
-	layer_add_child(window_layer, s_clock_layer);
+	//add drawing layers
+	s_clock_layer_hours = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
+	layer_set_update_proc(s_clock_layer_hours, draw_clock_layer_hours);
+	layer_add_child(window_layer, s_clock_layer_hours);
+	
+	s_clock_layer_mins = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
+	layer_set_update_proc(s_clock_layer_mins, draw_clock_layer_mins);
+	layer_add_child(window_layer, s_clock_layer_mins);
+	
+	s_clock_layer_secs = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
+	layer_set_update_proc(s_clock_layer_secs, draw_clock_layer_secs);
+	layer_add_child(window_layer, s_clock_layer_secs);
 	
 	//store clock layer bounds
-	s_clock_bounds = layer_get_bounds(s_clock_layer);
+	s_clock_bounds = layer_get_bounds(s_clock_layer_secs);
 	s_clock_center = grect_center_point(&s_clock_bounds);
 	
 	//init hand paths
 	s_hand_path_hour = gpath_create(&HOUR_HAND_POINTS);
+	gpath_move_to(s_hand_path_hour, s_clock_center);
+	
 	s_hand_path_min = gpath_create(&MINUTE_HAND_POINTS);
+	gpath_move_to(s_hand_path_min, s_clock_center);
+	
 	s_hand_path_sec = gpath_create(&SECOND_HAND_POINTS);
+	gpath_move_to(s_hand_path_sec, s_clock_center);
 }
 
 static void main_window_unload(Window *window) {
-	layer_destroy(s_clock_layer);
+	layer_destroy(s_clock_layer_hours);
+	layer_destroy(s_clock_layer_mins);
+	layer_destroy(s_clock_layer_secs);
 	
 	gpath_destroy(s_hand_path_hour);
 	gpath_destroy(s_hand_path_min);
@@ -133,9 +166,9 @@ static void init(void) {
 	window_stack_push(s_main_window, true);
 	
 	//set initial time
-	updateTime();
+	updateTime(SECOND_UNIT | MINUTE_UNIT | HOUR_UNIT);
 	
-	//register tick interrupt
+	//register tick event service
 	tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
 }
 
