@@ -1,7 +1,9 @@
 {
-    "appKeys": {},
+    "appKeys": {
+        "KEY_INVERT": 0
+    },
     "capabilities": [
-        ""
+        "configurable"
     ],
     "companyName": "geekjosh.co.uk",
     "longName": "Gaptime",

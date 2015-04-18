@@ -1,4 +1,6 @@
 #include <pebble.h>
+	
+#define KEY_INVERT 0
 
 static const uint16_t EDGE = 8;
 static const uint16_t THICKNESS = 10;
@@ -8,6 +10,7 @@ static Window *s_main_window = NULL;
 static Layer *s_clock_layer_secs = NULL;
 static Layer *s_clock_layer_mins = NULL;
 static Layer *s_clock_layer_hours = NULL;
+static InverterLayer *s_layer_invert = NULL;
 
 static GPath *s_hand_path_sec;
 static GPathInfo SECOND_HAND_POINTS = {
@@ -45,13 +48,41 @@ static GPoint s_clock_center;
 
 static struct tm *the_time;
 
+static void invert_face() {
+	bool inverted = persist_read_bool(KEY_INVERT);
+	if(inverted) {
+		Layer *window_layer = window_get_root_layer(s_main_window);
+		layer_add_child(window_layer, inverter_layer_get_layer(s_layer_invert));
+	} else {
+		layer_remove_from_parent(inverter_layer_get_layer(s_layer_invert));
+	}
+}
+
+static void in_recv_handler(DictionaryIterator *iterator, void *context) {
+	//Get tuple
+	Tuple *t = dict_read_first(iterator);
+	
+	if(t) {
+		switch (t->key) {
+			case KEY_INVERT:
+				if(strcmp(t->value->cstring, "on") == 0) {
+					persist_write_bool(KEY_INVERT, true);
+				} else if (strcmp(t->value->cstring, "off") == 0) {
+					persist_write_bool(KEY_INVERT, false);
+				}
+				invert_face();
+				break;
+		}
+	}
+}
+
 static void draw_clock_layer_hours(Layer *layer, GContext *ctx) {
 	uint16_t offset = 1;
 		
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
-	gpath_rotate_to(s_hand_path_hour, TRIG_MAX_ANGLE * the_time->tm_hour / 12);
+	gpath_rotate_to(s_hand_path_hour, TRIG_MAX_ANGLE * (((the_time->tm_hour % 12) * 12) + (the_time->tm_min / 5)) / (12 * 12));
 	gpath_draw_filled(ctx, s_hand_path_hour);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
 }
@@ -91,6 +122,11 @@ static void updateTime(TimeUnits unitsChanged) {
 	
 	if((unitsChanged & MINUTE_UNIT) != 0) {
 		layer_mark_dirty(s_clock_layer_mins);
+		//also redraw hour hand every 5 minutes
+		//this helps clarify difference at the hour i.e. 11:59 or 11:00
+		if(the_time->tm_min % 5 == 0) {
+			updateTime(HOUR_UNIT);
+		}
 	}
 	
 	layer_mark_dirty(s_clock_layer_secs);
@@ -120,6 +156,9 @@ static void main_window_load(Window *window) {
 	layer_set_update_proc(s_clock_layer_secs, draw_clock_layer_secs);
 	layer_add_child(window_layer, s_clock_layer_secs);
 	
+	s_layer_invert = inverter_layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
+	invert_face();
+	
 	//store clock layer bounds
 	s_clock_bounds = layer_get_bounds(s_clock_layer_secs);
 	s_clock_center = grect_center_point(&s_clock_bounds);
@@ -139,6 +178,7 @@ static void main_window_unload(Window *window) {
 	layer_destroy(s_clock_layer_hours);
 	layer_destroy(s_clock_layer_mins);
 	layer_destroy(s_clock_layer_secs);
+	inverter_layer_destroy(s_layer_invert);
 	
 	gpath_destroy(s_hand_path_hour);
 	gpath_destroy(s_hand_path_min);
@@ -163,6 +203,10 @@ static void init(void) {
 	
 	//register tick event service
 	tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+	
+	//register service to receive config from phone
+	app_message_register_inbox_received((AppMessageInboxReceived) in_recv_handler);
+	app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 }
 
 static void deinit(void) {
