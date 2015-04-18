@@ -82,7 +82,7 @@ static void draw_clock_layer_hours(Layer *layer, GContext *ctx) {
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
-	gpath_rotate_to(s_hand_path_hour, TRIG_MAX_ANGLE * (((the_time->tm_hour % 12) * 12) + (the_time->tm_min / 5)) / (12 * 12));
+	gpath_rotate_to(s_hand_path_hour, TRIG_MAX_ANGLE * (((the_time->tm_hour % 12) * 6) + (the_time->tm_min / 10)) / (12 * 6));
 	gpath_draw_filled(ctx, s_hand_path_hour);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
 }
@@ -122,9 +122,9 @@ static void updateTime(TimeUnits unitsChanged) {
 	
 	if((unitsChanged & MINUTE_UNIT) != 0) {
 		layer_mark_dirty(s_clock_layer_mins);
-		//also redraw hour hand every 5 minutes
+		//also redraw hour hand every 10 minutes
 		//this helps clarify difference at the hour i.e. 11:59 or 11:00
-		if(the_time->tm_min % 5 == 0) {
+		if(the_time->tm_min % 10 == 0) {
 			updateTime(HOUR_UNIT);
 		}
 	}
