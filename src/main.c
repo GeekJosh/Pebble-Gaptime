@@ -61,12 +61,7 @@ static void invert_face() {
 		persist_write_bool(KEY_INVERT, inverted);
 	}
 	
-	if(inverted) {
-		Layer *window_layer = window_get_root_layer(s_main_window);
-		layer_add_child(window_layer, inverter_layer_get_layer(s_layer_invert));
-	} else {
-		layer_remove_from_parent(inverter_layer_get_layer(s_layer_invert));
-	}
+	layer_set_hidden(inverter_layer_get_layer(s_layer_invert), !inverted);
 }
 
 static void toggle_text_time() {
@@ -77,19 +72,14 @@ static void toggle_text_time() {
 		persist_write_bool(KEY_TEXT_TIME, showTextTime);
 	}
 	
-	if(showTextTime) {
-		Layer *window_layer = window_get_root_layer(s_main_window);
-		layer_add_child(window_layer, text_layer_get_layer(s_text_time));
-	} else {
-		layer_remove_from_parent(text_layer_get_layer(s_text_time));
-	}
+	layer_set_hidden(text_layer_get_layer(s_text_time), !showTextTime);
 }
 
 static void in_recv_handler(DictionaryIterator *iterator, void *context) {
 	//Get tuple
 	Tuple *t = dict_read_first(iterator);
 	
-	if(t) {
+	while(t != NULL) {
 		switch (t->key) {
 			case KEY_INVERT:
 				if(strcmp(t->value->cstring, "on") == 0) {
@@ -108,6 +98,8 @@ static void in_recv_handler(DictionaryIterator *iterator, void *context) {
 				toggle_text_time();
 				break;
 		}
+		
+		t = dict_read_next(iterator);
 	}
 }
 
@@ -222,10 +214,12 @@ static void main_window_load(Window *window) {
 	text_layer_set_text_color(s_text_time, GColorBlack);
 	text_layer_set_font(s_text_time, fonts_get_system_font(FONT_KEY_GOTHIC_14));
 	text_layer_set_text_alignment(s_text_time, GTextAlignmentCenter);
+	layer_add_child(window_layer, text_layer_get_layer(s_text_time));
 	toggle_text_time();
 	
 	//init inverter layer
 	s_layer_invert = inverter_layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
+	layer_add_child(window_layer, inverter_layer_get_layer(s_layer_invert));
 	invert_face();
 	
 	//store clock layer bounds
