@@ -7,16 +7,10 @@
     <body>
         <h3>Gaptime Settings</h3>
         
-        <p>Invert:
-            <select id="invert_select">
-                <option value="off">Off</option>
-                <option value="on">On</option>
-            </select>
-        </p>
+        <p>Invert: <input type="checkbox" id="invert_checkbox"></p>
+        <p>Show time as text: <input type="checkbox" id="text_time_checkbox"></p>
         
-        <p>
-            <button id="save_button">Save</button>
-        </p>
+		<p><button id="save_button">Save</button></p>
         
         <div align="center">
             Like my watch face? Any contributions are greatly appreiated! <br>
@@ -30,13 +24,26 @@
         </div>
         
         <script>
+			var invertSelect = document.getElementById("invert_checkbox");
+			var textTimeSelect = document.getElementById("text_time_checkbox");
+			
+			//load previous settings if possible
+			invertSelect.checked = (window.localStorage.getItem("invert") == "on");
+			textTimeSelect.checked = (window.localStorage.getItem("textTime") == "on");
+			
             //Setup to allow easy adding more options later
             function saveOptions() {
-                var invertSelect = document.getElementById("invert_select");
-
+				var invert = (invertSelect.checked ? "on" : "off");
+				var textTime = (textTimeSelect.checked ? "on" : "off");
+				
                 var options = {
-                    "invert": invertSelect.options[invertSelect.selectedIndex].value
+                    "invert": invert,
+					"textTime": textTime
                 }
+				
+				//store locally so settings are remembered by config screen too
+				window.localStorage.setItem("invert", invert);
+				window.localStorage.setItem("textTime", textTime);
 
                 return options;
             };
