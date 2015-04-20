@@ -18,7 +18,17 @@ Pebble.addEventListener("webviewclosed",
     console.log("Configuration window returned: " + JSON.stringify(configuration));
  
     //Send to Pebble, persist there
-    Pebble.sendAppMessage(
+	Pebble.sendAppMessage(
+      {"KEY_TEXT_TIME": configuration.textTime},
+      function(e) {
+        console.log("Sending settings data...");
+      },
+      function(e) {
+        console.log("Settings feedback failed!");
+      }
+    );
+	  
+	Pebble.sendAppMessage(
       {"KEY_INVERT": configuration.invert},
       function(e) {
         console.log("Sending settings data...");

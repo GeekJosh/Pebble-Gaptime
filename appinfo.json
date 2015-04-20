@@ -1,6 +1,7 @@
 {
     "appKeys": {
-        "KEY_INVERT": 0
+        "KEY_INVERT": 0,
+        "KEY_TEXT_TIME": 1
     },
     "capabilities": [
         "configurable"
@@ -9,13 +10,20 @@
     "longName": "Gaptime",
     "projectType": "native",
     "resources": {
-        "media": []
+        "media": [
+            {
+                "file": "images/icon.png",
+                "menuIcon": true,
+                "name": "IMAGE_ICON",
+                "type": "png"
+            }
+        ]
     },
     "sdkVersion": "2",
     "shortName": "Gaptime",
     "uuid": "39754a24-18db-45ad-a021-cf4a80a22b1c",
     "versionCode": 1,
-    "versionLabel": "1.0",
+    "versionLabel": "1.1",
     "watchapp": {
         "watchface": true
     }
