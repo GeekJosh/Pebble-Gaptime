@@ -2,6 +2,7 @@
 	
 #define KEY_INVERT 0
 #define KEY_TEXT_TIME 1
+#define KEY_HAND_ORDER 2
 
 static const uint16_t EDGE = 8;
 static const uint16_t THICKNESS = 10;
@@ -9,16 +10,22 @@ static const uint16_t OFFSET = 4;
 	
 static Window *s_main_window = NULL;
 
-static Layer *s_clock_layer_secs = NULL;
-static Layer *s_clock_layer_mins = NULL;
-static Layer *s_clock_layer_hours = NULL;
+static char s_hand_order[4] = "SMH\0";
+static int32_t s_hand_angle[3] = { 0, 0, 0 };
+
+static bool s_inverted = false;
+static bool s_show_text_time = false;
+
+static Layer *s_clock_layer_inner = NULL;
+static Layer *s_clock_layer_center = NULL;
+static Layer *s_clock_layer_outer = NULL;
 
 static TextLayer *s_text_time = NULL;
 
 static InverterLayer *s_layer_invert = NULL;
 
-static GPath *s_hand_path_sec;
-static GPathInfo SECOND_HAND_POINTS = {
+static GPath *s_hand_path_inner;
+static GPathInfo INNER_HAND_POINTS = {
 	4,
 	(GPoint []) {
 		{-6, 0},
@@ -27,8 +34,8 @@ static GPathInfo SECOND_HAND_POINTS = {
 		{-6,  -38},
 	}
 };
-static GPath *s_hand_path_min;
-static GPathInfo MINUTE_HAND_POINTS = {
+static GPath *s_hand_path_center;
+static GPathInfo CENTER_HAND_POINTS = {
 	4,
 	(GPoint []) {
 		{-6, 0},
@@ -37,8 +44,8 @@ static GPathInfo MINUTE_HAND_POINTS = {
 		{-6,  -53},
 	}
 };
-static GPath *s_hand_path_hour;
-static GPathInfo HOUR_HAND_POINTS = {
+static GPath *s_hand_path_outer;
+static GPathInfo OUTER_HAND_POINTS = {
 	4,
 	(GPoint []) {
 		{-6, 0},
@@ -51,28 +58,23 @@ static GPathInfo HOUR_HAND_POINTS = {
 static GRect s_clock_bounds;
 static GPoint s_clock_center;
 
-static struct tm *the_time;
+//static struct tm *the_time;
+
+static int get_hand_order(char unit) {
+	for(int i = 0; i < 3; i++) {
+		if(s_hand_order[i] == unit) {
+			return i;
+		}
+	}
+	return -1;
+}
 
 static void invert_face() {
-	bool inverted = false;
-	if(persist_exists(KEY_INVERT)) {
-		inverted = persist_read_bool(KEY_INVERT);
-	} else {
-		persist_write_bool(KEY_INVERT, inverted);
-	}
-	
-	layer_set_hidden(inverter_layer_get_layer(s_layer_invert), !inverted);
+	layer_set_hidden(inverter_layer_get_layer(s_layer_invert), !s_inverted);
 }
 
 static void toggle_text_time() {
-	bool showTextTime = false;
-	if(persist_exists(KEY_TEXT_TIME)) {
-		showTextTime = persist_read_bool(KEY_TEXT_TIME);
-	} else {
-		persist_write_bool(KEY_TEXT_TIME, showTextTime);
-	}
-	
-	layer_set_hidden(text_layer_get_layer(s_text_time), !showTextTime);
+	layer_set_hidden(text_layer_get_layer(s_text_time), !s_show_text_time);
 }
 
 static void in_recv_handler(DictionaryIterator *iterator, void *context) {
@@ -83,17 +85,17 @@ static void in_recv_handler(DictionaryIterator *iterator, void *context) {
 		switch (t->key) {
 			case KEY_INVERT:
 				if(strcmp(t->value->cstring, "on") == 0) {
-					persist_write_bool(KEY_INVERT, true);
-				} else if (strcmp(t->value->cstring, "off") == 0) {
-					persist_write_bool(KEY_INVERT, false);
+					s_inverted = true;
+				} else {
+					s_inverted = false;
 				}
 				invert_face();
 				break;
 			case KEY_TEXT_TIME:
 				if(strcmp(t->value->cstring, "on") == 0) {
-					persist_write_bool(KEY_TEXT_TIME, true);
-				} else if (strcmp(t->value->cstring, "off") == 0) {
-					persist_write_bool(KEY_TEXT_TIME, false);
+					s_show_text_time = true;
+				} else {
+					s_show_text_time = false;
 				}
 				toggle_text_time();
 				break;
@@ -103,59 +105,78 @@ static void in_recv_handler(DictionaryIterator *iterator, void *context) {
 	}
 }
 
-static void draw_clock_layer_hours(Layer *layer, GContext *ctx) {
+static void draw_clock_layer_outer(Layer *layer, GContext *ctx) {
 	uint16_t offset = 1;
 		
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
-	gpath_rotate_to(s_hand_path_hour, TRIG_MAX_ANGLE * (((the_time->tm_hour % 12) * 6) + (the_time->tm_min / 10)) / (12 * 6));
-	gpath_draw_filled(ctx, s_hand_path_hour);
+	gpath_rotate_to(s_hand_path_outer, s_hand_angle[0]);
+	gpath_draw_filled(ctx, s_hand_path_outer);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
 }
 
-static void draw_clock_layer_mins(Layer *layer, GContext *ctx) {
+static void draw_clock_layer_center(Layer *layer, GContext *ctx) {
 	uint16_t offset = 1 + THICKNESS + OFFSET;
 	
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
-	gpath_rotate_to(s_hand_path_min, TRIG_MAX_ANGLE * the_time->tm_min / 60);
-	gpath_draw_filled(ctx, s_hand_path_min);
+	gpath_rotate_to(s_hand_path_center, s_hand_angle[1]);
+	gpath_draw_filled(ctx, s_hand_path_center);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
 }
 
-static void draw_clock_layer_secs(Layer *layer, GContext *ctx) {
+static void draw_clock_layer_inner(Layer *layer, GContext *ctx) {
 	uint16_t offset = 1 + (THICKNESS * 2) + (OFFSET * 2);
 	
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
-	gpath_rotate_to(s_hand_path_sec, TRIG_MAX_ANGLE * the_time->tm_sec / 60);
-	gpath_draw_filled(ctx, s_hand_path_sec);
+	gpath_rotate_to(s_hand_path_inner, s_hand_angle[2]);
+	gpath_draw_filled(ctx, s_hand_path_inner);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset - THICKNESS);
+}
+
+static void draw_hand(int hand) {
+	switch (hand) {
+		case 0:
+			layer_mark_dirty(s_clock_layer_outer);
+			break;
+		case 1:
+			layer_mark_dirty(s_clock_layer_center);
+			break;
+		case 2:
+			layer_mark_dirty(s_clock_layer_inner);
+			break;
+	}
 }
 
 //updates time display
 static void updateTime(TimeUnits unitsChanged) {
 	//get time
 	time_t temp = time(NULL);
-	the_time = localtime(&temp);
+	struct tm *the_time = localtime(&temp);
+	
+	//hand to update
+	int hand;
 	
 	//instruct pebble to redraw neccessary layers
-	if((unitsChanged & HOUR_UNIT) != 0) {
-		layer_mark_dirty(s_clock_layer_hours);
+	if((unitsChanged & HOUR_UNIT) != 0 || the_time->tm_min % 10 == 0) {
+		hand = get_hand_order('H');
+		if(hand > -1) {
+			s_hand_angle[hand] = TRIG_MAX_ANGLE * (((the_time->tm_hour % 12) * 6) + (the_time->tm_min / 10)) / (12 * 6);
+			draw_hand(hand);
+		}
 	}
 	
 	if((unitsChanged & MINUTE_UNIT) != 0) {
-		layer_mark_dirty(s_clock_layer_mins);
-		
-		//also redraw hour hand every 10 minutes
-		//this helps clarify difference at the hour i.e. 11:59 or 11:00
-		if(the_time->tm_min % 10 == 0) {
-			updateTime(HOUR_UNIT);
+		hand = get_hand_order('M');
+		if(hand > -1) {
+			s_hand_angle[hand] = TRIG_MAX_ANGLE * the_time->tm_min / 60;
+			draw_hand(hand);
 		}
-		
+
 		//update text time layer
 		static char buffer[] = "00:00";
 		// Write the current hours and minutes into the buffer
@@ -169,7 +190,11 @@ static void updateTime(TimeUnits unitsChanged) {
 		text_layer_set_text(s_text_time, buffer);
 	}
 	
-	layer_mark_dirty(s_clock_layer_secs);
+	hand = get_hand_order('S');
+	if(hand > -1) {
+		s_hand_angle[hand] = TRIG_MAX_ANGLE * the_time->tm_sec / 60;
+		draw_hand(hand);
+	}
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits unitsChanged) {
@@ -184,17 +209,17 @@ static void main_window_load(Window *window) {
 	GRect bounds = layer_get_bounds(window_layer);
 	
 	//add drawing layers
-	s_clock_layer_hours = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
-	layer_set_update_proc(s_clock_layer_hours, draw_clock_layer_hours);
-	layer_add_child(window_layer, s_clock_layer_hours);
+	s_clock_layer_outer = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
+	layer_set_update_proc(s_clock_layer_outer, draw_clock_layer_outer);
+	layer_add_child(window_layer, s_clock_layer_outer);
 	
-	s_clock_layer_mins = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
-	layer_set_update_proc(s_clock_layer_mins, draw_clock_layer_mins);
-	layer_add_child(window_layer, s_clock_layer_mins);
+	s_clock_layer_center = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
+	layer_set_update_proc(s_clock_layer_center, draw_clock_layer_center);
+	layer_add_child(window_layer, s_clock_layer_center);
 	
-	s_clock_layer_secs = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
-	layer_set_update_proc(s_clock_layer_secs, draw_clock_layer_secs);
-	layer_add_child(window_layer, s_clock_layer_secs);
+	s_clock_layer_inner = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
+	layer_set_update_proc(s_clock_layer_inner, draw_clock_layer_inner);
+	layer_add_child(window_layer, s_clock_layer_inner);
 	
 	//init text time layer
 	GSize max_size = graphics_text_layout_get_content_size(
@@ -223,36 +248,49 @@ static void main_window_load(Window *window) {
 	invert_face();
 	
 	//store clock layer bounds
-	s_clock_bounds = layer_get_bounds(s_clock_layer_secs);
+	s_clock_bounds = layer_get_bounds(s_clock_layer_outer);
 	s_clock_center = grect_center_point(&s_clock_bounds);
 	
 	//init hand paths
-	s_hand_path_hour = gpath_create(&HOUR_HAND_POINTS);
-	gpath_move_to(s_hand_path_hour, s_clock_center);
+	s_hand_path_outer = gpath_create(&OUTER_HAND_POINTS);
+	gpath_move_to(s_hand_path_outer, s_clock_center);
 	
-	s_hand_path_min = gpath_create(&MINUTE_HAND_POINTS);
-	gpath_move_to(s_hand_path_min, s_clock_center);
+	s_hand_path_center = gpath_create(&CENTER_HAND_POINTS);
+	gpath_move_to(s_hand_path_center, s_clock_center);
 	
-	s_hand_path_sec = gpath_create(&SECOND_HAND_POINTS);
-	gpath_move_to(s_hand_path_sec, s_clock_center);
+	s_hand_path_inner = gpath_create(&INNER_HAND_POINTS);
+	gpath_move_to(s_hand_path_inner, s_clock_center);
 }
 
 static void main_window_unload(Window *window) {
-	layer_destroy(s_clock_layer_hours);
-	layer_destroy(s_clock_layer_mins);
-	layer_destroy(s_clock_layer_secs);
+	layer_destroy(s_clock_layer_outer);
+	layer_destroy(s_clock_layer_center);
+	layer_destroy(s_clock_layer_inner);
 	
 	text_layer_destroy(s_text_time);
 	
 	inverter_layer_destroy(s_layer_invert);
 	
-	gpath_destroy(s_hand_path_hour);
-	gpath_destroy(s_hand_path_min);
-	gpath_destroy(s_hand_path_sec);
+	gpath_destroy(s_hand_path_outer);
+	gpath_destroy(s_hand_path_center);
+	gpath_destroy(s_hand_path_inner);
 }
 
 static void init(void) {
- // create main window and assign to pointer 
+	// load user settings
+	if(persist_exists(KEY_HAND_ORDER)) {
+		persist_read_string(KEY_HAND_ORDER, s_hand_order, 4);
+	}
+	
+	if(persist_exists(KEY_TEXT_TIME)) {
+		s_show_text_time = persist_read_bool(KEY_TEXT_TIME);
+	}
+	
+	if(persist_exists(KEY_INVERT)) {
+		s_inverted = persist_read_bool(KEY_INVERT);
+	}
+	
+ 	// create main window and assign to pointer 
 	s_main_window = window_create();
 	
 	//assign main window handlers
@@ -265,7 +303,7 @@ static void init(void) {
 	window_stack_push(s_main_window, true);
 	
 	//set initial time
-	updateTime(SECOND_UNIT | MINUTE_UNIT | HOUR_UNIT);
+	updateTime(0xFF);
 	
 	//register tick event service
 	tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
@@ -278,6 +316,11 @@ static void init(void) {
 static void deinit(void) {
 	//destroy main window
 	window_destroy(s_main_window);
+	
+	//save user settings
+	persist_write_bool(KEY_INVERT, s_inverted);
+	persist_write_bool(KEY_TEXT_TIME, s_show_text_time);
+	persist_write_string(KEY_HAND_ORDER, s_hand_order);
 }
 
 int main(void) {
