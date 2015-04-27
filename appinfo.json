@@ -24,7 +24,7 @@
     "shortName": "Gaptime",
     "uuid": "39754a24-18db-45ad-a021-cf4a80a22b1c",
     "versionCode": 1,
-    "versionLabel": "1.2",
+    "versionLabel": "1.4",
     "watchapp": {
         "watchface": true
     }
