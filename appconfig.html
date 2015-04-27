@@ -71,6 +71,23 @@
     return options;
   };
 
+  function isValid() {
+    if(handOrderInput.value.length != 3) {
+      window.alert("The hand order string must be 3 characters in length");
+      console.log("handOrder input length != 3");
+      return false;
+    }
+
+    var patt = /[HMS]{3}/i;
+    if(!patt.test(handOrderInput.value)) {
+      window.alert("You must only enter the characters S, M or H in to the hand order text box");
+      console.log("handOrder failed RegExp");
+      return false;
+    }
+
+    console.log("Form is valid");
+    return true;
+  }
 
   form.addEventListener("submit",
   function() {
@@ -82,7 +99,12 @@
     var options = saveOptions();
     var location = return_to + encodeURIComponent(JSON.stringify(options));
 
+    if(!isValid()) {
+      return false;
+    }
+
     form.action = location;
+    return true;
   },
   false);
   </script>
