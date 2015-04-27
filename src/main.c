@@ -1,5 +1,5 @@
 #include <pebble.h>
-	
+
 #define KEY_INVERT 0
 #define KEY_TEXT_TIME 1
 #define KEY_HAND_ORDER 2
@@ -7,7 +7,7 @@
 static const uint16_t EDGE = 8;
 static const uint16_t THICKNESS = 10;
 static const uint16_t OFFSET = 4;
-	
+
 static Window *s_main_window = NULL;
 
 static char s_hand_order[4] = "SMH\0";
@@ -58,8 +58,6 @@ static GPathInfo OUTER_HAND_POINTS = {
 static GRect s_clock_bounds;
 static GPoint s_clock_center;
 
-//static struct tm *the_time;
-
 static int get_hand_order(char unit) {
 	for(int i = 0; i < 3; i++) {
 		if(s_hand_order[i] == unit) {
@@ -80,7 +78,7 @@ static void toggle_text_time() {
 static void in_recv_handler(DictionaryIterator *iterator, void *context) {
 	//Get tuple
 	Tuple *t = dict_read_first(iterator);
-	
+
 	while(t != NULL) {
 		switch (t->key) {
 			case KEY_INVERT:
@@ -99,15 +97,19 @@ static void in_recv_handler(DictionaryIterator *iterator, void *context) {
 				}
 				toggle_text_time();
 				break;
+			case KEY_HAND_ORDER:
+				s_hand_order = t->value->cstring;
+				updateTime(0xFF);
+				break;
 		}
-		
+
 		t = dict_read_next(iterator);
 	}
 }
 
 static void draw_clock_layer_outer(Layer *layer, GContext *ctx) {
 	uint16_t offset = 1;
-		
+
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
@@ -118,7 +120,7 @@ static void draw_clock_layer_outer(Layer *layer, GContext *ctx) {
 
 static void draw_clock_layer_center(Layer *layer, GContext *ctx) {
 	uint16_t offset = 1 + THICKNESS + OFFSET;
-	
+
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
@@ -129,7 +131,7 @@ static void draw_clock_layer_center(Layer *layer, GContext *ctx) {
 
 static void draw_clock_layer_inner(Layer *layer, GContext *ctx) {
 	uint16_t offset = 1 + (THICKNESS * 2) + (OFFSET * 2);
-	
+
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_circle(ctx, s_clock_center, s_clock_center.x - offset);
 	graphics_context_set_fill_color(ctx, GColorWhite);
@@ -157,10 +159,10 @@ static void updateTime(TimeUnits unitsChanged) {
 	//get time
 	time_t temp = time(NULL);
 	struct tm *the_time = localtime(&temp);
-	
+
 	//hand to update
 	int hand;
-	
+
 	//instruct pebble to redraw neccessary layers
 	if((unitsChanged & HOUR_UNIT) != 0 || the_time->tm_min % 10 == 0) {
 		hand = get_hand_order('H');
@@ -169,7 +171,7 @@ static void updateTime(TimeUnits unitsChanged) {
 			draw_hand(hand);
 		}
 	}
-	
+
 	if((unitsChanged & MINUTE_UNIT) != 0) {
 		hand = get_hand_order('M');
 		if(hand > -1) {
@@ -182,14 +184,14 @@ static void updateTime(TimeUnits unitsChanged) {
 		// Write the current hours and minutes into the buffer
 		if(clock_is_24h_style() == true) {
     		// Use 24 hour format
-    		strftime(buffer, sizeof("00:00"), "%H:%M", the_time);
+    		strftime(buffer, sizeof(buffer), "%H:%M", the_time);
 		} else {
 			// Use 12 hour format
-			strftime(buffer, sizeof("00:00"), "%I:%M", the_time);
+			strftime(buffer, sizeof(buffer), "%I:%M", the_time);
 		}
 		text_layer_set_text(s_text_time, buffer);
 	}
-	
+
 	hand = get_hand_order('S');
 	if(hand > -1) {
 		s_hand_angle[hand] = TRIG_MAX_ANGLE * the_time->tm_sec / 60;
@@ -204,35 +206,35 @@ static void tick_handler(struct tm *tick_time, TimeUnits unitsChanged) {
 static void main_window_load(Window *window) {
 	//get root layer of window
 	Layer *window_layer = window_get_root_layer(window);
-	
+
 	//get window dimensions
 	GRect bounds = layer_get_bounds(window_layer);
-	
+
 	//add drawing layers
 	s_clock_layer_outer = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
 	layer_set_update_proc(s_clock_layer_outer, draw_clock_layer_outer);
 	layer_add_child(window_layer, s_clock_layer_outer);
-	
+
 	s_clock_layer_center = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
 	layer_set_update_proc(s_clock_layer_center, draw_clock_layer_center);
 	layer_add_child(window_layer, s_clock_layer_center);
-	
+
 	s_clock_layer_inner = layer_create(GRect(EDGE, EDGE, bounds.size.w - (EDGE * 2), bounds.size.h - (EDGE * 2)));
 	layer_set_update_proc(s_clock_layer_inner, draw_clock_layer_inner);
 	layer_add_child(window_layer, s_clock_layer_inner);
-	
+
 	//init text time layer
 	GSize max_size = graphics_text_layout_get_content_size(
 		"00:00",
-		fonts_get_system_font(FONT_KEY_GOTHIC_14), 
-		GRect(0, 0, bounds.size.w, bounds.size.h), 
-		GTextOverflowModeTrailingEllipsis, 
+		fonts_get_system_font(FONT_KEY_GOTHIC_14),
+		GRect(0, 0, bounds.size.w, bounds.size.h),
+		GTextOverflowModeTrailingEllipsis,
 		GTextAlignmentCenter
 	);
 	s_text_time = text_layer_create(GRect(
-		(bounds.size.w / 2) - (max_size.w / 2), 
-		(bounds.size.h / 2) - (max_size.h / 2), 
-		max_size.w, 
+		(bounds.size.w / 2) - (max_size.w / 2),
+		(bounds.size.h / 2) - (max_size.h / 2),
+		max_size.w,
 		max_size.h)
 	);
 	text_layer_set_background_color(s_text_time, GColorClear);
@@ -241,23 +243,23 @@ static void main_window_load(Window *window) {
 	text_layer_set_text_alignment(s_text_time, GTextAlignmentCenter);
 	layer_add_child(window_layer, text_layer_get_layer(s_text_time));
 	toggle_text_time();
-	
+
 	//init inverter layer
 	s_layer_invert = inverter_layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
 	layer_add_child(window_layer, inverter_layer_get_layer(s_layer_invert));
 	invert_face();
-	
+
 	//store clock layer bounds
 	s_clock_bounds = layer_get_bounds(s_clock_layer_outer);
 	s_clock_center = grect_center_point(&s_clock_bounds);
-	
+
 	//init hand paths
 	s_hand_path_outer = gpath_create(&OUTER_HAND_POINTS);
 	gpath_move_to(s_hand_path_outer, s_clock_center);
-	
+
 	s_hand_path_center = gpath_create(&CENTER_HAND_POINTS);
 	gpath_move_to(s_hand_path_center, s_clock_center);
-	
+
 	s_hand_path_inner = gpath_create(&INNER_HAND_POINTS);
 	gpath_move_to(s_hand_path_inner, s_clock_center);
 }
@@ -266,11 +268,11 @@ static void main_window_unload(Window *window) {
 	layer_destroy(s_clock_layer_outer);
 	layer_destroy(s_clock_layer_center);
 	layer_destroy(s_clock_layer_inner);
-	
+
 	text_layer_destroy(s_text_time);
-	
+
 	inverter_layer_destroy(s_layer_invert);
-	
+
 	gpath_destroy(s_hand_path_outer);
 	gpath_destroy(s_hand_path_center);
 	gpath_destroy(s_hand_path_inner);
@@ -281,33 +283,33 @@ static void init(void) {
 	if(persist_exists(KEY_HAND_ORDER)) {
 		persist_read_string(KEY_HAND_ORDER, s_hand_order, 4);
 	}
-	
+
 	if(persist_exists(KEY_TEXT_TIME)) {
 		s_show_text_time = persist_read_bool(KEY_TEXT_TIME);
 	}
-	
+
 	if(persist_exists(KEY_INVERT)) {
 		s_inverted = persist_read_bool(KEY_INVERT);
 	}
-	
- 	// create main window and assign to pointer 
+
+ 	// create main window and assign to pointer
 	s_main_window = window_create();
-	
+
 	//assign main window handlers
 	window_set_window_handlers(s_main_window, (WindowHandlers) {
 		.load = main_window_load,
 		.unload = main_window_unload
 	});
-	
+
 	//show the main window with animation
 	window_stack_push(s_main_window, true);
-	
+
 	//set initial time
 	updateTime(0xFF);
-	
+
 	//register tick event service
 	tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
-	
+
 	//register service to receive config from phone
 	app_message_register_inbox_received((AppMessageInboxReceived) in_recv_handler);
 	app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
@@ -316,7 +318,7 @@ static void init(void) {
 static void deinit(void) {
 	//destroy main window
 	window_destroy(s_main_window);
-	
+
 	//save user settings
 	persist_write_bool(KEY_INVERT, s_inverted);
 	persist_write_bool(KEY_TEXT_TIME, s_show_text_time);
