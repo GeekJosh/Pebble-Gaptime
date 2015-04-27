@@ -5,7 +5,8 @@
         "KEY_TEXT_TIME": 1
     },
     "capabilities": [
-        "configurable"
+        "configurable",
+        "location"
     ],
     "companyName": "geekjosh.co.uk",
     "longName": "Gaptime",
