@@ -3,6 +3,10 @@
 #define KEY_INVERT 0
 #define KEY_TEXT_TIME 1
 #define KEY_HAND_ORDER 2
+#define KEY_SUNRISE_H 3
+#define KEY_SUNRISE_M 4
+#define KEY_SUNSET_H 5
+#define KEY_SUNSET_M 6
 
 static const uint16_t EDGE = 8;
 static const uint16_t THICKNESS = 10;

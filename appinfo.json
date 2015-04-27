@@ -2,11 +2,15 @@
     "appKeys": {
         "KEY_HAND_ORDER": 2,
         "KEY_INVERT": 0,
+        "KEY_SUNRISE_H": 3,
+        "KEY_SUNRISE_M": 4,
+        "KEY_SUNSET_H": 5,
+        "KEY_SUNSET_M": 6,
         "KEY_TEXT_TIME": 1
     },
     "capabilities": [
-        "configurable",
-        "location"
+        "location",
+        "configurable"
     ],
     "companyName": "geekjosh.co.uk",
     "longName": "Gaptime",
