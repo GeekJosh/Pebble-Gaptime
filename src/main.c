@@ -75,38 +75,6 @@ static void toggle_text_time() {
 	layer_set_hidden(text_layer_get_layer(s_text_time), !s_show_text_time);
 }
 
-static void in_recv_handler(DictionaryIterator *iterator, void *context) {
-	//Get tuple
-	Tuple *t = dict_read_first(iterator);
-
-	while(t != NULL) {
-		switch (t->key) {
-			case KEY_INVERT:
-				if(strcmp(t->value->cstring, "on") == 0) {
-					s_inverted = true;
-				} else {
-					s_inverted = false;
-				}
-				invert_face();
-				break;
-			case KEY_TEXT_TIME:
-				if(strcmp(t->value->cstring, "on") == 0) {
-					s_show_text_time = true;
-				} else {
-					s_show_text_time = false;
-				}
-				toggle_text_time();
-				break;
-			case KEY_HAND_ORDER:
-				s_hand_order = t->value->cstring;
-				updateTime(0xFF);
-				break;
-		}
-
-		t = dict_read_next(iterator);
-	}
-}
-
 static void draw_clock_layer_outer(Layer *layer, GContext *ctx) {
 	uint16_t offset = 1;
 
@@ -276,6 +244,40 @@ static void main_window_unload(Window *window) {
 	gpath_destroy(s_hand_path_outer);
 	gpath_destroy(s_hand_path_center);
 	gpath_destroy(s_hand_path_inner);
+}
+
+static void in_recv_handler(DictionaryIterator *iterator, void *context) {
+	//Get tuple
+	Tuple *t = dict_read_first(iterator);
+
+	while(t != NULL) {
+		switch (t->key) {
+			case KEY_INVERT:
+				if(strcmp(t->value->cstring, "on") == 0) {
+					s_inverted = true;
+				} else {
+					s_inverted = false;
+				}
+				invert_face();
+				break;
+			case KEY_TEXT_TIME:
+				if(strcmp(t->value->cstring, "on") == 0) {
+					s_show_text_time = true;
+				} else {
+					s_show_text_time = false;
+				}
+				toggle_text_time();
+				break;
+			case KEY_HAND_ORDER:
+				for(int i =0; i < 3 && i < (int)strlen(t->value->cstring); i++) {
+					s_hand_order[i] = t->value->cstring[i];
+				}
+				updateTime(0xFF);
+				break;
+		}
+
+		t = dict_read_next(iterator);
+	}
 }
 
 static void init(void) {
