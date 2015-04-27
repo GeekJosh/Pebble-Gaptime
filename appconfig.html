@@ -1,79 +1,90 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Gaptime Settings</title>
-    </head>
-    
-    <body>
-        <h3>Gaptime Settings</h3>
-        
-        <p>Invert: <input type="checkbox" id="invert_checkbox"></p>
-        <p>Show time as text: <input type="checkbox" id="text_time_checkbox"></p>
-        
-		<p><button id="save_button">Save</button></p>
-        
-        <div align="center">
-            Like my watch face? Any contributions are greatly appreiated! <br>
-            <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-                <input type="hidden" name="cmd" value="_s-xclick">
-                <input type="hidden" name="hosted_button_id" value="7PWS7CJFTV7DQ">
-                <input type="image" src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal – The safer, easier way to pay online.">
-                <img alt="" border="0" src="https://www.paypalobjects.com/en_GB/i/scr/pixel.gif" width="1" height="1">
-            </form>
+<head>
+  <title>Gaptime Settings</title>
+</head>
 
-        </div>
-        
-        <script>
-			var invertSelect = document.getElementById("invert_checkbox");
-			var textTimeSelect = document.getElementById("text_time_checkbox");
-			
-			//load previous settings if possible
-			invertSelect.checked = (window.localStorage.getItem("invert") == "on");
-			textTimeSelect.checked = (window.localStorage.getItem("textTime") == "on");
-			
-			//fix to return params when called from emulator
-			function getQueryParam(variable, default_) {
-				var query = location.search.substring(1);
-				var vars = query.split('&');
-				for (var i = 0; i < vars.length; i++) {
-					var pair = vars[i].split('=');
-					if (pair[0] == variable)
-						return decodeURIComponent(pair[1]);
-				}
-				return default_ || false;
-			}
-			
-            //Setup to allow easy adding more options later
-            function saveOptions() {
-				var invert = (invertSelect.checked ? "on" : "off");
-				var textTime = (textTimeSelect.checked ? "on" : "off");
-				
-                var options = {
-                    "invert": invert,
-					"textTime": textTime
-                }
-				
-				//store locally so settings are remembered by config screen too
-				window.localStorage.setItem("invert", invert);
-				window.localStorage.setItem("textTime", textTime);
+<body>
+  <h3>Gaptime Settings</h3>
+  <form action="#" id="settings_form">
+    <p>Invert: <input type="checkbox" id="invert_checkbox"></p>
+    <p>Show time as text: <input type="checkbox" id="text_time_checkbox"></p>
+    <p>Hand order [SMH]: <input id="hand_order" value="SMH" pattern="[SMHsmh]{3}" required></p>
 
-                return options;
-            };
+    <p><input type="submit" value="Save" id="save_button"></p>
+  </form>
 
-            var submitButton = document.getElementById("save_button");
-            submitButton.addEventListener("click", 
-                function() {
-                    console.log("Submit");
-					
-					//fix for Cloud Pebble emulator
-					var return_to = getQueryParam('return_to', 'pebblejs://close#');
+  <div align="center">
+    Like my watch face? Any contributions are greatly appreiated! <br>
+    <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+      <input type="hidden" name="cmd" value="_s-xclick">
+      <input type="hidden" name="hosted_button_id" value="7PWS7CJFTV7DQ">
+      <input type="image" src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal – The safer, easier way to pay online.">
+      <img alt="" border="0" src="https://www.paypalobjects.com/en_GB/i/scr/pixel.gif" width="1" height="1">
+    </form>
 
-                    var options = saveOptions();
-                    var location = return_to + encodeURIComponent(JSON.stringify(options));
+  </div>
 
-                    document.location = location;
-                }, 
-            false);
-        </script>
-    </body>
+  <script>
+  var invertSelect = document.getElementById("invert_checkbox");
+  var textTimeSelect = document.getElementById("text_time_checkbox");
+  var handOrderInput = document.getElementById("hand_order");
+  var submitButton = document.getElementById("save_button");
+  var form = document.getElementById("settings_form");
+
+  //load previous settings if possible
+  invertSelect.checked = (window.localStorage.getItem("invert") == "on");
+  textTimeSelect.checked = (window.localStorage.getItem("textTime") == "on");
+  if(window.localStorage.getItem("handOrder") !== null) {
+    handOrderInput.value = window.localStorage.getItem("handOrder");
+  }
+
+  //fix to return params when called from emulator
+  function getQueryParam(variable, default_) {
+    var query = location.search.substring(1);
+    var vars = query.split('&');
+    for (var i = 0; i < vars.length; i++) {
+      var pair = vars[i].split('=');
+      if (pair[0] == variable)
+      return decodeURIComponent(pair[1]);
+    }
+    return default_ || false;
+  }
+
+  //Setup to allow easy adding more options later
+  function saveOptions() {
+    var invert = (invertSelect.checked ? "on" : "off");
+    var textTime = (textTimeSelect.checked ? "on" : "off");
+    var handOrder = handOrderInput.value.toUpperCase();
+
+    var options = {
+      "invert": invert,
+      "textTime": textTime,
+      "handOrder": handOrder
+    }
+
+    //store locally so settings are remembered by config screen too
+    window.localStorage.setItem("invert", invert);
+    window.localStorage.setItem("textTime", textTime);
+    window.localStorage.setItem("handOrder", handOrder);
+
+    return options;
+  };
+
+
+  form.addEventListener("submit",
+  function() {
+    console.log("Submit");
+
+    //fix for Cloud Pebble emulator
+    var return_to = getQueryParam('return_to', 'pebblejs://close#');
+
+    var options = saveOptions();
+    var location = return_to + encodeURIComponent(JSON.stringify(options));
+
+    document.location = location;
+  },
+  false);
+  </script>
+</body>
 </html>
