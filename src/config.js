@@ -14,12 +14,13 @@ Pebble.addEventListener("webviewclosed",
 							//Get JSON dictionary
 							var configuration = JSON.parse(decodeURIComponent(e.response));
 							console.log("Configuration window returned: " + JSON.stringify(configuration));
-							
+
 							//Send to Pebble, persist there
 							Pebble.sendAppMessage(
 								{
 									"KEY_TEXT_TIME": configuration.textTime,
-									"KEY_INVERT": configuration.invert
+									"KEY_INVERT": configuration.invert,
+									"KEY_HAND_ORDER": configuration.handOrder
 								},
 								function(e) {
 									console.log("Sending settings data...");
