@@ -82,7 +82,7 @@
     var options = saveOptions();
     var location = return_to + encodeURIComponent(JSON.stringify(options));
 
-    document.location = location;
+    form.action = location;
   },
   false);
   </script>
