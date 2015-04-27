@@ -7,7 +7,7 @@ var locationOptions = {
 }
 
 function locationSuccess(pos) {
-    console.log("lat: " + pos.coords.latitude + "lon: " + pos.coords.longitude);
+    console.log("lat: " + pos.coords.latitude + " lon: " + pos.coords.longitude);
     sunTimes = SunCalc.getTimes(new Date(), pos.coords.latitude, pos.coords.longitude);
     console.log("Sunrise: " + sunTimes.sunrise.getHours() + ":" + sunTimes.sunrise.getMinutes());
     console.log("Sunset: " + sunTimes.sunset.getHours() + ":" + sunTimes.sunset.getMinutes());
