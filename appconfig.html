@@ -16,21 +16,30 @@
         }
 
         label {
-            width: 30%;
+            width: 50%;
             text-align: left;
         }
 
         label, input, select {
             display: inline-block;
+            -webkit-box-sizing: content-box;
+            -moz-box-sizing: content-box;
+            box-sizing: content-box;
         }
 
         input, select {
+            border: 0;
             border-radius: 8px;
-            padding: 0 5px;
+            padding: 5px 5px;
         }
 
         div {
             padding: 5px;
+        }
+
+        #content {
+            max-width: 500px;
+            margin: 0 auto;
         }
 
         #locationWarning {
@@ -52,42 +61,44 @@
 </head>
 
 <body>
-    <h3>Gaptime Settings</h3>
-    <form action="#" id="settings_form">
-        <div id="divTextTime"><label for="text_time_checkbox">Show time as text: </label><input type="checkbox" id="text_time_checkbox"></div>
-        <div id="divHandOrder"><label for="hand_order">Hand order [SMH]: </label><input id="hand_order" value="SMH" pattern="[SMHsmh]{3}" maxlength="3" required></div>
-        <div id="divInvertCheckbox"><label for="invert_checkbox">Invert: </label><input type="checkbox" id="invert_checkbox"></div>
-        
-        <div id="divInvertOptions">
-            <label for="invert_select">Invert face: </label>
-            <select id="invert_select">
-                <option value="off">Off</option>
-                <option value="on">Always</option>
-                <option value="time">Set Time</option>
-                <option value="sunrise">Sunrise</option>
-                <option value="sunset">Sunset</option>
-            </select>
+    <div id="content">
+        <h3>Gaptime Settings</h3>
+        <form action="#" id="settings_form">
+            <div id="divTextTime"><label for="text_time_checkbox">Show time as text: </label><input type="checkbox" id="text_time_checkbox"></div>
+            <div id="divHandOrder"><label for="hand_order">Hand order [SMH]: </label><input id="hand_order" value="SMH" pattern="[SMHsmh]{3}" size="3" maxlength="3" required></div>
+            <div id="divInvertCheckbox"><label for="invert_checkbox">Invert: </label><input type="checkbox" id="invert_checkbox"></div>
 
-            <div id="locationWarning" style="display: none"><b>Warning:</b> In order to calculate the sunrise and sunset times, the Pebble app equires access to your location. Currently this is a global setting which means that once allowed, <b>all</b> Pebble apps will have access to your location, not just this one</div>
+            <div id="divInvertOptions">
+                <label for="invert_select">Invert face: </label>
+                <select id="invert_select">
+                    <option value="off">Off</option>
+                    <option value="on">Always</option>
+                    <option value="time">Set Time</option>
+                    <option value="sunrise">Sunrise</option>
+                    <option value="sunset">Sunset</option>
+                </select>
 
-            <div id="invertBetween" style="display: none">
-                <label for="invert_start">Start: </label><input type="time" id="invert_start" value="06:00" />
-                <label for="invert_end">End: </label><input type="time" id="invert_end" value="19:00" />
+                <div id="locationWarning" style="display: none"><b>Warning:</b> In order to calculate the sunrise and sunset times, the Pebble app equires access to your location. Currently this is a global setting which means that once allowed, <b>all</b> Pebble apps will have access to your location, not just this one</div>
+
+                <div id="invertBetween" style="display: none">
+                    <label for="invert_start">Start: </label><input type="time" id="invert_start" value="06:00" />
+                    <label for="invert_end">End: </label><input type="time" id="invert_end" value="19:00" />
+                </div>
             </div>
-        </div>
 
-        <div><input type="submit" value="Save" id="save_button"></div>
-    </form>
-
-    <div id="paypal">
-        Like my watch face? Any contributions are greatly appreciated! <br>
-        <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-            <input type="hidden" name="cmd" value="_s-xclick">
-            <input type="hidden" name="hosted_button_id" value="7PWS7CJFTV7DQ">
-            <input type="image" src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal – The safer, easier way to pay online.">
-            <img alt="" border="0" src="https://www.paypalobjects.com/en_GB/i/scr/pixel.gif" width="1" height="1">
+            <div><input type="submit" value="Save" id="save_button"></div>
         </form>
 
+        <div id="paypal">
+            Like my watch face? Any contributions are greatly appreciated! <br>
+            <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+                <input type="hidden" name="cmd" value="_s-xclick">
+                <input type="hidden" name="hosted_button_id" value="7PWS7CJFTV7DQ">
+                <input type="image" src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal – The safer, easier way to pay online.">
+                <img alt="" border="0" src="https://www.paypalobjects.com/en_GB/i/scr/pixel.gif" width="1" height="1">
+            </form>
+
+        </div>
     </div>
 
     <script>
