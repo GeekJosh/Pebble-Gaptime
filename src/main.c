@@ -5,7 +5,7 @@
 #define KEY_HAND_ORDER 2
 #define KEY_INVERT_START 3
 #define KEY_INVERT_END 4
-#defineKEY_UPDATE_SUNTIMES 5
+#define KEY_UPDATE_SUNTIMES 5
 
 static const uint16_t EDGE = 8;
 static const uint16_t THICKNESS = 10;
@@ -71,9 +71,10 @@ static int get_hand_order(char unit) {
 }
 
 static void updateSunTimes() {
-	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
-	dict_write_int(iter, KEY_UPDATE_SUNTIMES, 1, sizeof(int), true);
+	DictionaryIterator *iter;
+	app_message_outbox_begin(&iter);
+	int value = 1;
+	dict_write_int(iter, KEY_UPDATE_SUNTIMES, &value, sizeof(int), true);
 	app_message_outbox_send();
 }
 
