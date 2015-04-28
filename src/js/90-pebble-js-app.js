@@ -19,7 +19,7 @@ function locationError(err) {
     console.log("Location error (" + err.code + "): " + err, message);
 }
 
-var updateLocation = function () {
+function updateLocation() {
     navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
