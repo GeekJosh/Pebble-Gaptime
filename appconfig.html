@@ -1,112 +1,237 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Gaptime Settings</title>
+    <title>Gaptime Settings</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #34495e;
+            color: #ddd;
+        }
+
+        form {
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        label {
+            width: 30%;
+            text-align: left;
+        }
+
+        label, input, select {
+            display: inline-block;
+        }
+
+        input, select {
+            border-radius: 8px;
+            padding: 0 5px;
+        }
+
+        div {
+            padding: 5px;
+        }
+
+        #locationWarning {
+            color: #CC645C;
+        }
+
+        #save_button {
+            float: right;
+            padding: 10px;
+        }
+
+        #paypal {
+            clear: both;
+            width: 80%;
+            margin: 0 auto;
+            text-align: center;
+        }
+    </style>
 </head>
 
 <body>
-  <h3>Gaptime Settings</h3>
-  <form action="#" id="settings_form">
-    <p>Invert: <input type="checkbox" id="invert_checkbox"></p>
-    <p>Show time as text: <input type="checkbox" id="text_time_checkbox"></p>
-    <p>Hand order [SMH]: <input id="hand_order" value="SMH" pattern="[SMHsmh]{3}" required></p>
+    <h3>Gaptime Settings</h3>
+    <form action="#" id="settings_form">
+        <div id="divTextTime"><label for="text_time_checkbox">Show time as text: </label><input type="checkbox" id="text_time_checkbox"></div>
+        <div id="divHandOrder"><label for="hand_order">Hand order [SMH]: </label><input id="hand_order" value="SMH" pattern="[SMHsmh]{3}" maxlength="3" required></div>
+        <div id="divInvertCheckbox"><label for="invert_checkbox">Invert: </label><input type="checkbox" id="invert_checkbox"></div>
+        
+        <div id="divInvertOptions">
+            <label for="invert_select">Invert face: </label>
+            <select id="invert_select">
+                <option value="off">Off</option>
+                <option value="on">Always</option>
+                <option value="time">Set Time</option>
+                <option value="sunrise">Sunrise</option>
+                <option value="sunset">Sunset</option>
+            </select>
 
-    <p><input type="submit" value="Save" id="save_button"></p>
-  </form>
+            <div id="locationWarning" style="display: none"><b>Warning:</b> In order to calculate the sunrise and sunset times, the Pebble app equires access to your location. Currently this is a global setting which means that once allowed, <b>all</b> Pebble apps will have access to your location, not just this one</div>
 
-  <div align="center">
-    Like my watch face? Any contributions are greatly appreiated! <br>
-    <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-      <input type="hidden" name="cmd" value="_s-xclick">
-      <input type="hidden" name="hosted_button_id" value="7PWS7CJFTV7DQ">
-      <input type="image" src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal – The safer, easier way to pay online.">
-      <img alt="" border="0" src="https://www.paypalobjects.com/en_GB/i/scr/pixel.gif" width="1" height="1">
+            <div id="invertBetween" style="display: none">
+                <label for="invert_start">Start: </label><input type="time" id="invert_start" value="06:00" />
+                <label for="invert_end">End: </label><input type="time" id="invert_end" value="19:00" />
+            </div>
+        </div>
+
+        <div><input type="submit" value="Save" id="save_button"></div>
     </form>
 
-  </div>
+    <div id="paypal">
+        Like my watch face? Any contributions are greatly appreciated! <br>
+        <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+            <input type="hidden" name="cmd" value="_s-xclick">
+            <input type="hidden" name="hosted_button_id" value="7PWS7CJFTV7DQ">
+            <input type="image" src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal – The safer, easier way to pay online.">
+            <img alt="" border="0" src="https://www.paypalobjects.com/en_GB/i/scr/pixel.gif" width="1" height="1">
+        </form>
 
-  <script>
-  var invertSelect = document.getElementById("invert_checkbox");
-  var textTimeSelect = document.getElementById("text_time_checkbox");
-  var handOrderInput = document.getElementById("hand_order");
-  var submitButton = document.getElementById("save_button");
-  var form = document.getElementById("settings_form");
+    </div>
 
-  //load previous settings if possible
-  invertSelect.checked = (window.localStorage.getItem("invert") == "on");
-  textTimeSelect.checked = (window.localStorage.getItem("textTime") == "on");
-  if(window.localStorage.getItem("handOrder") !== null) {
-    handOrderInput.value = window.localStorage.getItem("handOrder");
-  }
+    <script>
+        var divInvertCheckbox = document.getElementById("divInvertCheckbox");
+        var divInvertOptions = document.getElementById("divInvertOptions");
+        var invertCheckbox = document.getElementById("invert_checkbox");
+        var textTimeCheckbox = document.getElementById("text_time_checkbox");
+        var handOrderInput = document.getElementById("hand_order");
+        var submitButton = document.getElementById("save_button");
+        var invertSelect = document.getElementById("invert_select");
+        var invertBetween = document.getElementById("invertBetween");
+        var invertStartTime = document.getElementById("invert_start");
+        var invertEndTime = document.getElementById("invert_end");
+        var locationWarning = document.getElementById("locationWarning");
+        var form = document.getElementById("settings_form");
 
-  //fix to return params when called from emulator
-  function getQueryParam(variable, default_) {
-    var query = location.search.substring(1);
-    var vars = query.split('&');
-    for (var i = 0; i < vars.length; i++) {
-      var pair = vars[i].split('=');
-      if (pair[0] == variable)
-      return decodeURIComponent(pair[1]);
-    }
-    return default_ || false;
-  }
+        //load previous settings if possible
+        invertCheckbox.checked = (window.localStorage.getItem("invert") == "on");
+        textTimeCheckbox.checked = (window.localStorage.getItem("textTime") == "on");
+        if (window.localStorage.getItem("handOrder") !== null) {
+            handOrderInput.value = window.localStorage.getItem("handOrder");
+        }
+        if (window.localStorage.getItem("invert") !== null) {
+            invertSelect.value = window.localStorage.getItem("invert");
+        }
+        if (window.localStorage.getItem("invertStart") !== null) {
+            invertStartTime.value = window.localStorage.getItem("invertStart");
+        }
+        if (window.localStorage.getItem("invertEnd") !== null) {
+            invertEndTime.value = window.localStorage.getItem("invertEnd");
+        }
 
-  //Setup to allow easy adding more options later
-  function saveOptions() {
-    var invert = (invertSelect.checked ? "on" : "off");
-    var textTime = (textTimeSelect.checked ? "on" : "off");
-    var handOrder = handOrderInput.value.toUpperCase();
+        //fix to return params when called from emulator
+        function getQueryParam(variable, default_) {
+            var query = location.search.substring(1);
+            var vars = query.split('&');
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split('=');
+                if (pair[0] == variable)
+                    return decodeURIComponent(pair[1]);
+            }
+            return default_ || false;
+        }
 
-    var options = {
-      "invert": invert,
-      "textTime": textTime,
-      "handOrder": handOrder
-    }
+        //versioning changes
+        var version = getQueryParam("version", false);
+        if (version === false) {     // pre-versioning version
+            divInvertOptions.setAttribute("style", "display: none");
+        } else {
+            // hide/unhide page elements as per version
+            divInvertCheckbox.setAttribute("style", "display: none");
+        }
 
-    //store locally so settings are remembered by config screen too
-    window.localStorage.setItem("invert", invert);
-    window.localStorage.setItem("textTime", textTime);
-    window.localStorage.setItem("handOrder", handOrder);
+        //Setup to allow easy adding more options later
+        function saveOptions() {
+            var invert = null;
 
-    return options;
-  };
+            if (divInvertCheckbox.offsetParent !== null) {    // old version of settings with checkbox visible
+                invert = (invertCheckbox.checked ? "on" : "off");
+            } else {
+                invert = invertSelect.value;
+            }
 
-  function isValid() {
-    if(handOrderInput.value.length != 3) {
-      window.alert("The hand order string must be 3 characters in length");
-      console.log("handOrder input length != 3");
-      return false;
-    }
+            var textTime = (textTimeCheckbox.checked ? "on" : "off");
+            var handOrder = handOrderInput.value.toUpperCase();
+            var invertStart = invertStartTime.value;
+            var invertEnd = invertEndTime.value;
 
-    var patt = /[HMS]{3}/i;
-    if(!patt.test(handOrderInput.value)) {
-      window.alert("You must only enter the characters S, M or H in to the hand order text box");
-      console.log("handOrder failed RegExp");
-      return false;
-    }
+            var options = {
+                "textTime": textTime,
+                "handOrder": handOrder,
+                "invert": invert,
+                "invertStart": invertStart,
+                "invertEnd": invertEnd
+            }
 
-    console.log("Form is valid");
-    return true;
-  }
+            //store locally so settings are remembered by config screen too
+            window.localStorage.setItem("textTime", textTime);
+            window.localStorage.setItem("handOrder", handOrder);
+            window.localStorage.setItem("invert", invert);
+            window.localStorage.setItem("invertStart", invertStart);
+            window.localStorage.setItem("invertEnd", invertEnd);
 
-  form.addEventListener("submit",
-  function() {
-    console.log("Submit");
+            console.log(options);
 
-    //fix for Cloud Pebble emulator
-    var return_to = getQueryParam('return_to', 'pebblejs://close#');
+            return options;
+        };
 
-    var options = saveOptions();
-    var location = return_to + encodeURIComponent(JSON.stringify(options));
+        function isValid() {
+            if (handOrderInput.value.length != 3) {
+                window.alert("The hand order string must be 3 characters in length");
+                console.log("handOrder input length != 3");
+                return false;
+            }
 
-    if(!isValid()) {
-      return false;
-    }
+            var patt = /[HMS]{3}/i;
+            if (!patt.test(handOrderInput.value)) {
+                window.alert("You must only enter the characters S, M or H in to the hand order text box");
+                console.log("handOrder failed RegExp");
+                return false;
+            }
 
-    form.action = location;
-    return true;
-  },
-  false);
-  </script>
+            console.log("Form is valid");
+            return true;
+        }
+
+        var updateInvertOptions = function () {
+            switch (invertSelect.value) {
+                case "time":
+                    invertBetween.setAttribute("style", "");
+                    locationWarning.setAttribute("style", "display: none");
+                    break;
+                case "sunset":
+                case "sunrise":
+                    invertBetween.setAttribute("style", "display: none");
+                    locationWarning.setAttribute("style", "");
+                    break;
+                default:
+                    invertBetween.setAttribute("style", "display: none");
+                    locationWarning.setAttribute("style", "display: none");
+            }
+        };
+
+        invertSelect.addEventListener("change", function () { updateInvertOptions(); });
+        updateInvertOptions();
+
+        form.addEventListener("submit",
+        function () {
+            console.log("Submit");
+
+            //fix for Cloud Pebble emulator
+            var return_to = getQueryParam('return_to', 'pebblejs://close#');
+
+            var options = saveOptions();
+            var location = return_to + encodeURIComponent(JSON.stringify(options));
+
+            if (!isValid()) {
+                return false;
+            }
+
+            form.action = location;
+            return true;
+        },
+        false);
+    </script>
 </body>
 </html>
