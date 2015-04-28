@@ -313,6 +313,12 @@ static void init(void) {
 		s_inverted = persist_read_bool(KEY_INVERT);
 	}
 
+	//register service to receive config from phone
+	app_message_register_inbox_received((AppMessageInboxReceived)in_recv_handler);
+	app_message_register_outbox_failed(outbox_failed_callback);
+	app_message_register_outbox_sent(outbox_sent_callback);
+	app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+
  	// create main window and assign to pointer
 	s_main_window = window_create();
 
@@ -333,12 +339,6 @@ static void init(void) {
 
 	//register tick event service
 	tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
-
-	//register service to receive config from phone
-	app_message_register_inbox_received((AppMessageInboxReceived) in_recv_handler);
-	app_message_register_outbox_failed(outbox_failed_callback);
-	app_message_register_outbox_sent(outbox_sent_callback);
-	app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 }
 
 static void deinit(void) {
