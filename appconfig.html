@@ -235,12 +235,8 @@
             var options = saveOptions();
             var location = return_to + encodeURIComponent(JSON.stringify(options));
 
-            if (!isValid()) {
-                return false;
-            }
-
             form.action = location;
-            return true;
+            return isValid();
         },
         false);
     </script>
