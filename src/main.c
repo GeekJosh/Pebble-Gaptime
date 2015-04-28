@@ -319,6 +319,9 @@ static void init(void) {
 	//set initial time
 	updateTime(0xFF);
 
+	//update SunTime
+	updateSunTimes();
+
 	//register tick event service
 	tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
 
