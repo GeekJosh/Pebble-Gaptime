@@ -1,4 +1,4 @@
-const APP_VERSION = 1.4;
+const APP_VERSION = "1.4";
 
 var sunTimes;
 
@@ -45,8 +45,10 @@ Pebble.addEventListener("webviewclosed",
 						    Pebble.sendAppMessage(
 								{
 								    "KEY_TEXT_TIME": configuration.textTime,
+								    "KEY_HAND_ORDER": configuration.handOrder,
 								    "KEY_INVERT": configuration.invert,
-								    "KEY_HAND_ORDER": configuration.handOrder
+								    "KEY_INVERT_START": configuration.invertStart,
+								    "KEY_INVERT_END": configuration.invertEnd
 								},
 								function (e) {
 								    console.log("Sending settings data...");
@@ -55,3 +57,8 @@ Pebble.addEventListener("webviewclosed",
 								    console.log("Settings feedback failed!");
 								});
 						});
+
+Pebble.addEventListener("appmessage",
+    function (e) {
+        console.log(JSON.stringify(e.payload));
+    });

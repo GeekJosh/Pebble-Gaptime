@@ -1,12 +1,11 @@
 {
     "appKeys": {
-        "KEY_HAND_ORDER": 2,
         "KEY_INVERT": 0,
-        "KEY_SUNRISE_H": 3,
-        "KEY_SUNRISE_M": 4,
-        "KEY_SUNSET_H": 5,
-        "KEY_SUNSET_M": 6,
-        "KEY_TEXT_TIME": 1
+        "KEY_TEXT_TIME": 1,
+        "KEY_HAND_ORDER": 2,
+        "KEY_INVERT_START": 3,
+        "KEY_INVERT_END": 4,
+        "KEY_UPDATE_SUNTIMES":  5
     },
     "capabilities": [
         "location",
@@ -29,7 +28,7 @@
     "shortName": "Gaptime",
     "uuid": "39754a24-18db-45ad-a021-cf4a80a22b1c",
     "versionCode": 1,
-    "versionLabel": "1.4",
+    "versionLabel": "1.5",
     "watchapp": {
         "watchface": true
     }
