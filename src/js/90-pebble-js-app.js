@@ -1,3 +1,5 @@
+const APP_VERSION = 1.4;
+
 var sunTimes;
 
 var locationOptions = {
@@ -30,7 +32,7 @@ Pebble.addEventListener("ready",
 Pebble.addEventListener("showConfiguration",
 						function (e) {
 						    //Load the remote config page
-						    Pebble.openURL("http://geekjosh.github.io/Pebble-Gaptime/appconfig.html");
+						    Pebble.openURL("http://geekjosh.github.io/Pebble-Gaptime/appconfig.html?version=" + APP_VERSION);
 						});
 
 Pebble.addEventListener("webviewclosed",
