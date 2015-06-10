@@ -1,4 +1,4 @@
-var APP_VERSION = "1.4";
+var APP_VERSION = "1.5";
 
 var sunTimes;
 var invert = "off";
@@ -27,13 +27,13 @@ function locationSuccess(pos) {
 			console.log("Sunrise data received by Pebble");
 		},
 		function (e) {
-			console.warn("Sunrise data not acknowledged by Pebble");
+			console.log("Sunrise data not acknowledged by Pebble");
 		}
 	);
 }
 
 function locationError(err) {
-    console.error("Location error (" + err.code + "): " + err.message);
+    console.log("Location error (" + err.code + "): " + err.message);
 }
 
 function updateLocation() {
@@ -73,7 +73,7 @@ Pebble.addEventListener("webviewclosed",
 									console.log("Settings received by Pebble");
 								},
 								function (e) {
-									console.warn("Settings not acknowledged by Pebble");
+									console.log("Settings not acknowledged by Pebble");
 								});
 						});
 
