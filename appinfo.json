@@ -1,11 +1,13 @@
 {
     "appKeys": {
-        "KEY_INVERT": 0,
-        "KEY_TEXT_TIME": 1,
         "KEY_HAND_ORDER": 2,
-        "KEY_INVERT_START": 3,
-        "KEY_INVERT_END": 4,
-        "KEY_UPDATE_SUNTIMES":  5
+        "KEY_INVERT": 0,
+        "KEY_INVERT_END_HOUR": 6,
+        "KEY_INVERT_END_MIN": 5,
+        "KEY_INVERT_START_HOUR": 4,
+        "KEY_INVERT_START_MIN": 3,
+        "KEY_TEXT_TIME": 1,
+        "KEY_UPDATE_SUNTIMES": 7
     },
     "capabilities": [
         "location",

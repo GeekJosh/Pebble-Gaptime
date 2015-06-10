@@ -3,9 +3,19 @@
 #define KEY_INVERT 0
 #define KEY_TEXT_TIME 1
 #define KEY_HAND_ORDER 2
-#define KEY_INVERT_START 3
-#define KEY_INVERT_END 4
-#define KEY_UPDATE_SUNTIMES 5
+#define KEY_INVERT_START_MIN 3
+#define KEY_INVERT_START_HOUR 4
+#define KEY_INVERT_END_MIN 5
+#define KEY_INVERT_END_HOUR 6
+#define KEY_UPDATE_SUNTIMES 7
+
+#define PS_INVERT_TIME 100
+	
+#define INVERT_ON_STR "on"
+#define INVERT_OFF_STR "off"
+#define INVERT_TIME_STR "time"
+#define INVERT_SUNRISE_STR "sunrise"
+#define INVERT_SUNSET_STR "sunset"
 
 static const uint16_t EDGE = 8;
 static const uint16_t THICKNESS = 10;
@@ -61,6 +71,28 @@ static GPathInfo OUTER_HAND_POINTS = {
 static GRect s_clock_bounds;
 static GPoint s_clock_center;
 
+typedef enum {
+	OFF,
+	ON,
+	TIME,
+	SUNRISE,
+	SUNSET
+} InvertTimeType;
+
+typedef struct InvertTime {
+	uint8_t updateMin;
+	uint8_t updateHour;
+	uint8_t onMin;
+	uint8_t onHour;
+	uint8_t offMin;
+	uint8_t offHour;
+	InvertTimeType type;
+} InvertTime;
+
+static InvertTime invertTime;
+
+struct tm *the_time;
+
 static int get_hand_order(char unit) {
 	for(int i = 0; i < 3; i++) {
 		if(s_hand_order[i] == unit) {
@@ -74,7 +106,7 @@ static void updateSunTimes() {
 	DictionaryIterator *iter;
 	app_message_outbox_begin(&iter);
 	int value = 1;
-	dict_write_int(iter, KEY_UPDATE_SUNTIMES, &value, sizeof(int), true);
+	dict_write_int(iter, KEY_UPDATE_SUNTIMES, &value, sizeof(value), true);
 	app_message_outbox_send();
 }
 
@@ -137,11 +169,16 @@ static void draw_hand(int hand) {
 static void updateTime(TimeUnits unitsChanged) {
 	//get time
 	time_t temp = time(NULL);
-	struct tm *the_time = localtime(&temp);
+	the_time = localtime(&temp);
 
 	//hand to update
 	int hand;
-
+	
+	//update SunTimes if enabled and day changes
+	if((invertTime.type == SUNRISE || invertTime.type == SUNSET) && (unitsChanged & DAY_UNIT) != 0) {
+		updateSunTimes();
+	}
+	
 	//instruct pebble to redraw neccessary layers
 	if((unitsChanged & HOUR_UNIT) != 0 || the_time->tm_min % 10 == 0) {
 		hand = get_hand_order('H');
@@ -169,6 +206,17 @@ static void updateTime(TimeUnits unitsChanged) {
 			strftime(buffer, sizeof(buffer), "%I:%M", the_time);
 		}
 		text_layer_set_text(s_text_time, buffer);
+		
+		//invert face if neccessary
+		if(invertTime.type == TIME || invertTime.type == SUNRISE || invertTime.type == SUNSET) {
+			s_inverted = ((the_time->tm_hour * 60) + the_time->tm_min >= (invertTime.onHour * 60) + invertTime.onMin && (the_time->tm_hour * 60) + the_time->tm_min < (invertTime.offHour *60) + invertTime.offMin);
+			invert_face();
+		} 
+		
+		//try to update SunTimes every 20 minutes if not updated in last 12 hours
+		if((invertTime.type == SUNRISE || invertTime.type == SUNSET) && (invertTime.updateHour == 255 || (the_time->tm_min % 20 == 0 && ((the_time->tm_hour * 60) + the_time->tm_min) - ((invertTime.updateHour * 60) + invertTime.updateMin) >= 60))) {
+			updateSunTimes();
+		}
 	}
 
 	hand = get_hand_order('S');
@@ -264,12 +312,17 @@ static void in_recv_handler(DictionaryIterator *iterator, void *context) {
 	while(t != NULL) {
 		switch (t->key) {
 			case KEY_INVERT:
-				if(strcmp(t->value->cstring, "on") == 0) {
-					s_inverted = true;
-				} else {
-					s_inverted = false;
+				if (strcmp(t->value->cstring, "on") == 0) {
+					invertTime.type = ON;
+				} else if(strcmp(t->value->cstring, "off") == 0) {
+					invertTime.type = OFF;
+				} else if(strcmp(t->value->cstring, "time") == 0) {
+					invertTime.type = TIME;
+				} else if(strcmp(t->value->cstring, "sunrise") == 0) {
+					invertTime.type = SUNRISE;
+				} else if(strcmp(t->value->cstring, "sunset") == 0) {
+					invertTime.type = SUNSET;
 				}
-				invert_face();
 				break;
 			case KEY_TEXT_TIME:
 				if(strcmp(t->value->cstring, "on") == 0) {
@@ -285,9 +338,39 @@ static void in_recv_handler(DictionaryIterator *iterator, void *context) {
 				}
 				updateTime(0xFF);
 				break;
+			case KEY_INVERT_END_MIN:
+				invertTime.offMin = t->value->uint8;
+				break;
+			case KEY_INVERT_END_HOUR:
+				invertTime.offHour = t->value->uint8;
+				break;
+			case KEY_INVERT_START_MIN:
+				invertTime.onMin = t->value->uint8;
+				break;
+			case KEY_INVERT_START_HOUR:
+				invertTime.onHour = t->value->uint8;
+				break;
+			case KEY_UPDATE_SUNTIMES:
+				invertTime.updateHour = the_time->tm_hour;
+				invertTime.updateMin = the_time->tm_min;
+				break;
 		}
 
 		t = dict_read_next(iterator);
+	}
+	
+	//update invert face
+	switch(invertTime.type) {
+		case ON:
+			s_inverted = true;
+			invert_face();
+			break;
+		case OFF:
+			s_inverted = false;
+			invert_face();
+			break;
+		default:
+			break;
 	}
 }
 
@@ -300,6 +383,15 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 }
 
 static void init(void) {
+	//initialize invertTime
+	invertTime.offMin = 255;
+	invertTime.offHour = 255;
+	invertTime.onMin = 255;
+	invertTime.onHour = 255;
+	invertTime.updateMin = 255;
+	invertTime.updateHour = 255;
+	invertTime.type = OFF;
+	
 	// load user settings
 	if(persist_exists(KEY_HAND_ORDER)) {
 		persist_read_string(KEY_HAND_ORDER, s_hand_order, 4);
@@ -311,6 +403,10 @@ static void init(void) {
 
 	if(persist_exists(KEY_INVERT)) {
 		s_inverted = persist_read_bool(KEY_INVERT);
+	}
+	
+	if(persist_exists(PS_INVERT_TIME)) {
+		persist_read_data(PS_INVERT_TIME, &invertTime, sizeof(invertTime));
 	}
 
 	//register service to receive config from phone
@@ -334,9 +430,6 @@ static void init(void) {
 	//set initial time
 	updateTime(0xFF);
 
-	//update SunTime
-	updateSunTimes();
-
 	//register tick event service
 	tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
 }
@@ -349,6 +442,7 @@ static void deinit(void) {
 	persist_write_bool(KEY_INVERT, s_inverted);
 	persist_write_bool(KEY_TEXT_TIME, s_show_text_time);
 	persist_write_string(KEY_HAND_ORDER, s_hand_order);
+	persist_write_data(PS_INVERT_TIME, &invertTime, sizeof(invertTime));
 }
 
 int main(void) {
