@@ -164,15 +164,17 @@
 
             var textTime = (textTimeCheckbox.checked ? "on" : "off");
             var handOrder = handOrderInput.value.toUpperCase();
-            var invertStart = invertStartTime.value;
-            var invertEnd = invertEndTime.value;
+            var invertStart = invertStartTime.value.split(":");
+            var invertEnd = invertEndTime.value.split(":");
 
             var options = {
                 "textTime": textTime,
                 "handOrder": handOrder,
                 "invert": invert,
-                "invertStart": invertStart,
-                "invertEnd": invertEnd
+                "invertStartMin": parseInt(invertStart[1]),
+                "invertStartHour": parseInt(invertStart[0]),
+                "invertEndMin": parseInt(invertEnd[1]),
+                "invertEndHour": parseInt(invertEnd[0])
             }
 
             //store locally so settings are remembered by config screen too
