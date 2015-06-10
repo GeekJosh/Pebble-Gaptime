@@ -235,10 +235,10 @@
         var updateInvertOptions = function () {
             switch (invertSelect.value) {
                 case "time":
-                    invertBetween.removeAttribute("style");
-                    invertStartTime.removeAttribute("disabled");
-                    invertEndTime.removeAttribute("disabled");
-                    locationWarning.addAttribute("hidden");
+                    invertBetween.setAttribute("style", "");
+                    invertStartTime.setAttribute("disabled", false);
+                    invertEndTime.setAttribute("disabled", false);
+                    locationWarning.setAttribute("style", "display: none;");
                     if (window.localStorage.getItem("invertStart") !== null) {
                         invertStartTime.value = window.localStorage.getItem("invertStart");
                     } else {
@@ -252,10 +252,10 @@
                     break;
                 case "sunset":
                 case "sunrise":
-                    invertBetween.removeAttribute("style");
-                    invertStartTime.addAttribute("disabled");
-                    invertEndTime.addAttribute("disabled");
-                    invertBetween.addAttribute("style", "display: visible");
+                    invertBetween.setAttribute("style", "");
+                    invertStartTime.setAttribute("disabled", true);
+                    invertEndTime.setAttribute("disabled", true);
+                    invertBetween.setAttribute("style", "");
                     locationWarning.setAttribute("style", "");
                     updateLocation();
                     break;
