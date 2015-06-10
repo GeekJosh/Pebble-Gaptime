@@ -100,8 +100,9 @@
 
         </div>
     </div>
-
-    <script>
+    
+    <script type="text/javascript" src="https://raw.githubusercontent.com/mourner/suncalc/master/suncalc.js"></script>
+    <script type="text/javascript">
         var divInvertCheckbox = document.getElementById("divInvertCheckbox");
         var divInvertOptions = document.getElementById("divInvertOptions");
         var invertCheckbox = document.getElementById("invert_checkbox");
@@ -129,6 +130,30 @@
         }
         if (window.localStorage.getItem("invertEnd") !== null) {
             invertEndTime.value = window.localStorage.getItem("invertEnd");
+        }
+        
+        var locationOptions = {
+            enableHighAccuracy: false,
+            maximumAge: 10000,
+            timeout: 10000
+        };
+
+        function locationSuccess(pos) {
+            console.log("lat: " + pos.coords.latitude + " lon: " + pos.coords.longitude);
+            var sunTimes = SunCalc.getTimes(new Date(), pos.coords.latitude, pos.coords.longitude);
+            console.log("Sunrise: " + sunTimes.sunrise.getHours() + ":" + sunTimes.sunrise.getMinutes());
+            console.log("Sunset: " + sunTimes.sunset.getHours() + ":" + sunTimes.sunset.getMinutes());
+            
+            invertStartTime.value = invertSelect.value == "sunrise" ? sunTimes.sunrise.getHours() + ":" + sunTimes.sunrise.getMinutes() : sunTimes.sunset.getHours() + ":" + sunTimes.sunset.getMinutes();
+            invertEndTime.value = invertSelect.value == "sunrise" ? sunTimes.sunset.getHours() + ":" + sunTimes.sunset.getMinutes() : sunTimes.sunrise.getHours() + ":" + sunTimes.sunrise.getMinutes();
+        }
+
+        function locationError(err) {
+            console.log("Location error (" + err.code + "): " + err.message);
+        }
+
+        function updateLocation() {
+            navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
         }
 
         //fix to return params when called from emulator
@@ -210,12 +235,27 @@
         var updateInvertOptions = function () {
             switch (invertSelect.value) {
                 case "time":
-                    invertBetween.setAttribute("style", "");
-                    locationWarning.setAttribute("style", "display: none");
+                    invertBetween.removeAttribute("style");
+                    invertStartTime.removeAttribute("disabled");
+                    invertEndTime.removeAttribute("disabled");
+                    locationWarning.addAttribute("hidden");
+                    if (window.localStorage.getItem("invertStart") !== null) {
+                        invertStartTime.value = window.localStorage.getItem("invertStart");
+                    } else {
+                        invertStartTime.value = "06:00";
+                    }
+                    if (window.localStorage.getItem("invertEnd") !== null) {
+                        invertEndTime.value = window.localStorage.getItem("invertEnd");
+                    } else {
+                        invertEndTime.value = "20:00";
+                    }
                     break;
                 case "sunset":
                 case "sunrise":
-                    invertBetween.setAttribute("style", "display: none");
+                    invertBetween.removeAttribute("style");
+                    invertStartTime.addAttribute("disabled");
+                    invertEndTime.addAttribute("disabled");
+                    invertBetween.addAttribute("style", "display: visible");
                     locationWarning.setAttribute("style", "");
                     break;
                 default:
